@@ -22,9 +22,10 @@
  ***************************************************************************/
 """
 from qgis.PyQt.QtCore import QLocale, QTranslator, QCoreApplication
-from qgis.core import QgsSettings
+from qgis.core import QgsSettings, QgsMapLayerProxyModel, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
+from qgis.gui import QgsMapToolEmitPoint
 
 # Import the code for the dialog
 from .tp_qgis_tsi_dialog import TpQgisTsiDialog
@@ -188,7 +189,14 @@ class TpQgisTsi:
             self.first_start = False
             self.dlg = TpQgisTsiDialog()
 
-        print("Im working")
+            self.dlg.mMapLayerComboBox.setFilters(QgsMapLayerProxyModel.PointLayer)
+
+        self.canvas = self.iface.mapCanvas()
+        self.pointTool = QgsMapToolEmitPoint(self.canvas)
+        self.pointTool.canvasClicked.connect(self.get_coordinates)
+
+        # bouton "Choisir sur la carte"
+        self.dlg.pushButton_map_clic.clicked.connect(self.start_picking)
 
         # show the dialog
         self.dlg.show()
@@ -198,5 +206,21 @@ class TpQgisTsi:
         if result:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
-            print("Im working two times")
+            pass
 
+    def start_picking(self):
+        self.dlg.hide()
+        self.canvas.setMapTool(self.pointTool)
+
+    def get_coordinates(self, point, button):
+        # reprojection vers WGS84
+        src = self.canvas.mapSettings().destinationCrs()
+        dst = QgsCoordinateReferenceSystem("EPSG:4326")
+        tr = QgsCoordinateTransform(src, dst, QgsProject.instance())
+        p = tr.transform(point)
+
+        self.dlg.doubleSpinBox_latitude.setValue(p.y())
+        self.dlg.doubleSpinBox_longitude.setValue(p.x())
+
+        self.canvas.unsetMapTool(self.pointTool)
+        self.dlg.show()
