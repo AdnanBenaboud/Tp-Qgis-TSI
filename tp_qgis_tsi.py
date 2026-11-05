@@ -26,11 +26,18 @@ from qgis.core import QgsSettings, QgsMapLayerProxyModel, QgsCoordinateReference
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 from qgis.gui import QgsMapToolEmitPoint
+import requests
 
 # Import the code for the dialog
 from .tp_qgis_tsi_dialog import TpQgisTsiDialog
 import os.path
 
+TYPES_VOIE = {
+    "rue", "avenue", "boulevard", "chemin", "impasse", "place", "allée",
+    "route", "quai", "cours", "passage", "square", "ruelle", "sentier",
+    "voie", "esplanade", "promenade", "chaussée", "traverse", "cité",
+    "résidence", "lotissement", "venelle", "parvis", "rond-point", "mail",
+}
 
 class TpQgisTsi:
     """QGIS Plugin Implementation."""
@@ -193,7 +200,7 @@ class TpQgisTsi:
 
         self.canvas = self.iface.mapCanvas()
         self.pointTool = QgsMapToolEmitPoint(self.canvas)
-        self.pointTool.canvasClicked.connect(self.get_coordinates)
+        self.pointTool.canvasClicked.connect(self.button_map)
 
         # bouton "Choisir sur la carte"
         self.dlg.pushButton_map_clic.clicked.connect(self.start_picking)
@@ -212,15 +219,68 @@ class TpQgisTsi:
         self.dlg.hide()
         self.canvas.setMapTool(self.pointTool)
 
-    def get_coordinates(self, point, button):
-        # reprojection vers WGS84
+    def point_transform_to_4326(self,point):
         src = self.canvas.mapSettings().destinationCrs()
         dst = QgsCoordinateReferenceSystem("EPSG:4326")
         tr = QgsCoordinateTransform(src, dst, QgsProject.instance())
         p = tr.transform(point)
+        return p
+
+    def button_map(self,point):
+        self.get_coordinates(point)
+        self.get_adress(point)
+
+    def get_coordinates(self, point):
+        p = self.point_transform_to_4326(point)
 
         self.dlg.doubleSpinBox_latitude.setValue(p.y())
         self.dlg.doubleSpinBox_longitude.setValue(p.x())
 
         self.canvas.unsetMapTool(self.pointTool)
         self.dlg.show()
+
+    def get_adress(self,point):
+        p = self.point_transform_to_4326(point)
+        try:
+            r = requests.get(
+                "https://data.geopf.fr/geocodage/reverse",
+                params={
+                    "lon": p.x(),
+                    "lat": p.y(),
+                    "index": "address",
+                    "type": "housenumber",
+                    "limit": 1,
+                },
+                timeout=5,
+            )
+            r.raise_for_status()
+            data = r.json()
+
+        except (requests.RequestException, ValueError):
+            self.iface.messageBar().pushWarning("BAN", "Service BAN injoignable")
+            return
+
+        salacted_data = data["features"][0]["properties"]
+        type_voie, nom_voie = self.split_street(salacted_data.get("street", ""))
+
+        labels = {
+            self.dlg.label_numero_voie: salacted_data.get("housenumber", ""),
+            self.dlg.label_type_voie: type_voie,
+            self.dlg.label_nom_voie: nom_voie,
+            self.dlg.label_insee: salacted_data.get("citycode", ""),
+            self.dlg.label_commune: salacted_data.get("city", ""),
+            self.dlg.label_adresse: salacted_data.get("label", ""),
+        }
+        for label, text in labels.items():
+            label.setText(text)
+            label.adjustSize()
+
+    def split_street(self, street):
+        parts = street.split(" ", 1)
+        if len(parts) == 2 and parts[0].lower() in TYPES_VOIE:
+            return parts[0], parts[1]
+        return "", street
+
+    def get_objects(self,point):
+        selected_layer = self.dlg.mMapLayerComboBox.currentLayer()
+
