@@ -283,4 +283,5 @@ class TpQgisTsi:
 
     def get_objects(self,point):
         selected_layer = self.dlg.mMapLayerComboBox.currentLayer()
+        
 
