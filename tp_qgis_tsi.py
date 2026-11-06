@@ -198,12 +198,19 @@ class TpQgisTsi:
 
             self.dlg.mMapLayerComboBox.setFilters(QgsMapLayerProxyModel.PointLayer)
 
-        self.canvas = self.iface.mapCanvas()
-        self.pointTool = QgsMapToolEmitPoint(self.canvas)
-        self.pointTool.canvasClicked.connect(self.button_map)
+            self.canvas = self.iface.mapCanvas()
 
-        # bouton "Choisir sur la carte"
-        self.dlg.pushButton_map_clic.clicked.connect(self.start_picking)
+            self.pointTool = QgsMapToolEmitPoint(self.canvas)
+            self.pointTool.canvasClicked.connect(self.button_map)
+
+            self.pointTool_objs = QgsMapToolEmitPoint(self.canvas)
+            self.pointTool_objs.canvasClicked.connect(self.button_map_objs)
+
+            self.dlg.pushButton_map_clic.clicked.connect(
+                lambda _checked=False: self.start_picking(self.pointTool))
+            self.dlg.pushButton_objts.clicked.connect(
+                lambda _checked=False: self.start_picking(self.pointTool_objs))
+
 
         # show the dialog
         self.dlg.show()
@@ -215,9 +222,10 @@ class TpQgisTsi:
             # substitute with your code.
             pass
 
-    def start_picking(self):
+    def start_picking(self, tool):
         self.dlg.hide()
-        self.canvas.setMapTool(self.pointTool)
+        self.canvas.setMapTool(tool)
+
 
     def point_transform_to_4326(self,point):
         src = self.canvas.mapSettings().destinationCrs()
@@ -229,7 +237,12 @@ class TpQgisTsi:
     def button_map(self,point):
         self.get_coordinates(point)
         self.get_adress(point)
-        self.get_objects(point)
+
+    def button_map_objs(self, point):
+            self.get_objects(point)
+            self.canvas.unsetMapTool(self.pointTool_objs)
+            self.dlg.show()
+
 
     def get_coordinates(self, point):
         p = self.point_transform_to_4326(point)
