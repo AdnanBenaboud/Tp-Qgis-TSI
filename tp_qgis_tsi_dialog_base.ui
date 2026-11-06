@@ -87,6 +87,9 @@
            <bold>true</bold>
           </font>
          </property>
+         <property name="styleSheet">
+          <string notr="true">color: rgb(53, 132, 228);</string>
+         </property>
          <property name="text">
           <string>Les coordonnées et l'adresse la plus proche par clique</string>
          </property>
@@ -298,6 +301,9 @@
            <bold>true</bold>
           </font>
          </property>
+         <property name="styleSheet">
+          <string notr="true">color: rgb(237, 51, 59);</string>
+         </property>
          <property name="text">
           <string>Comptage des objets des couches</string>
          </property>
@@ -339,6 +345,9 @@
          </item>
          <item>
           <widget class="QLabel" name="label_objs">
+           <property name="styleSheet">
+            <string notr="true">color: rgb(255, 120, 0);</string>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -353,6 +362,9 @@
          </item>
          <item>
           <widget class="QLabel" name="label_distance">
+           <property name="styleSheet">
+            <string notr="true">color: rgb(255, 120, 0);</string>
+           </property>
            <property name="text">
             <string/>
            </property>
