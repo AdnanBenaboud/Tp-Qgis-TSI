@@ -22,7 +22,7 @@
  ***************************************************************************/
 """
 from qgis.PyQt.QtCore import QLocale, QTranslator, QCoreApplication
-from qgis.core import QgsSettings, QgsMapLayerProxyModel, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject
+from qgis.core import QgsSettings, QgsMapLayerProxyModel, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject, QgsDistanceArea
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 from qgis.gui import QgsMapToolEmitPoint
@@ -229,6 +229,7 @@ class TpQgisTsi:
     def button_map(self,point):
         self.get_coordinates(point)
         self.get_adress(point)
+        self.get_objects(point)
 
     def get_coordinates(self, point):
         p = self.point_transform_to_4326(point)
@@ -283,5 +284,32 @@ class TpQgisTsi:
 
     def get_objects(self,point):
         selected_layer = self.dlg.mMapLayerComboBox.currentLayer()
-        
+        distance = self.dlg.spinBox_distance.value()
+        if selected_layer is None:
+            self.iface.messageBar().pushWarning("Comptage", "Aucune couche sélectionnée")
+            return
+
+        # CRS du canvas -> CRS de la couche
+        tr = QgsCoordinateTransform(
+            self.canvas.mapSettings().destinationCrs(),
+            selected_layer.crs(),
+            QgsProject.instance())
+        p = tr.transform(point)
+
+        d = QgsDistanceArea()
+        d.setSourceCrs(selected_layer.crs(), QgsProject.instance().transformContext())
+        d.setEllipsoid("WGS84")
+
+        count = 0
+        for feature in selected_layer.getFeatures():
+            geom = feature.geometry()
+            if geom.isNull():
+                continue
+            if d.measureLine(p, geom.centroid().asPoint()) <= distance:
+                count += 1
+
+        self.dlg.label_objs.setText(str(count))
+        self.dlg.label_distance.setText(str(distance))
+        self.dlg.label_objs.adjustSize()
+        self.dlg.label_distance.adjustSize()
 

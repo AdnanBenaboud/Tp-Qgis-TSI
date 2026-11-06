@@ -6,29 +6,13 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>864</width>
-    <height>706</height>
+    <width>744</width>
+    <height>547</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>TP QGIS TSI</string>
   </property>
-  <widget class="QDialogButtonBox" name="button_box">
-   <property name="geometry">
-    <rect>
-     <x>490</x>
-     <y>660</y>
-     <width>341</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
-   </property>
-   <property name="standardButtons">
-    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-   </property>
-  </widget>
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
@@ -360,7 +344,7 @@
      <x>140</x>
      <y>350</y>
      <width>101</width>
-     <height>31</height>
+     <height>41</height>
     </rect>
    </property>
    <property name="text">
@@ -406,7 +390,7 @@
      <x>80</x>
      <y>460</y>
      <width>31</width>
-     <height>31</height>
+     <height>41</height>
     </rect>
    </property>
    <property name="text">
@@ -432,7 +416,7 @@
      <x>260</x>
      <y>460</y>
      <width>31</width>
-     <height>31</height>
+     <height>41</height>
     </rect>
    </property>
    <property name="text">
@@ -481,6 +465,9 @@
      <height>28</height>
     </rect>
    </property>
+   <property name="maximum">
+    <number>1000</number>
+   </property>
   </widget>
  </widget>
  <customwidgets>
@@ -491,38 +478,5 @@
   </customwidget>
  </customwidgets>
  <resources/>
- <connections>
-  <connection>
-   <sender>button_box</sender>
-   <signal>accepted()</signal>
-   <receiver>Qdialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>button_box</sender>
-   <signal>rejected()</signal>
-   <receiver>Qdialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>
