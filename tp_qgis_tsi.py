@@ -22,7 +22,7 @@
  ***************************************************************************/
 """
 from qgis.PyQt.QtCore import QLocale, QTranslator, QCoreApplication
-from qgis.core import QgsSettings, QgsMapLayerProxyModel, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject, QgsDistanceArea
+from qgis.core import QgsSettings, QgsMapLayerProxyModel,QgsGeometry,QgsVectorLayer,QgsFeature,  QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject, QgsDistanceArea, QgsFillSymbol, QgsPointXY
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 from qgis.gui import QgsMapToolEmitPoint
@@ -240,6 +240,7 @@ class TpQgisTsi:
 
     def button_map_objs(self, point):
             self.get_objects(point)
+            self.draw_buffer(point)
             self.canvas.unsetMapTool(self.pointTool_objs)
             self.dlg.show()
 
@@ -326,3 +327,49 @@ class TpQgisTsi:
         self.dlg.label_objs.adjustSize()
         self.dlg.label_distance.adjustSize()
 
+    def get_buffer_layer(self):
+        layer = getattr(self, "buffer_layer", None)
+        # la couche a pu être supprimée du projet par l'utilisateur
+        if layer is None or QgsProject.instance().mapLayer(self.buffer_layer_id) is None:
+            layer = QgsVectorLayer("Polygon?crs=EPSG:4326", "Zone tampon", "memory")
+
+            symbol = QgsFillSymbol.createSimple({
+                "color": "0,0,0,0",
+                "style": "no",
+                "outline_color": "#000000",
+                "outline_width": "0.3",
+                "outline_style": "solid",
+            })
+            layer.renderer().setSymbol(symbol)
+
+            QgsProject.instance().addMapLayer(layer)
+            self.buffer_layer = layer
+            self.buffer_layer_id = layer.id()
+        return layer
+
+    def draw_buffer(self, point):
+
+        distance = self.dlg.spinBox_distance.value()
+
+        p = self.point_transform_to_4326(point)
+
+        proj = (f"+proj=aeqd +lat_0={p.y()} +lon_0={p.x()} "
+                "+x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs")
+        aeqd = QgsCoordinateReferenceSystem.fromProj(proj)
+        wgs84 = QgsCoordinateReferenceSystem("EPSG:4326")
+        ctx = QgsProject.instance().transformContext()
+
+        # cercle de rayon X mètres autour de (0, 0), puis retour en WGS84
+        geom = QgsGeometry.fromPointXY(QgsPointXY(0, 0)).buffer(distance, 64)
+        geom.transform(QgsCoordinateTransform(aeqd, wgs84, ctx))
+
+        layer = self.get_buffer_layer()
+
+        # RG2 : on supprime les anciennes zones avant d'ajouter la nouvelle
+        layer.dataProvider().truncate()
+
+        feat = QgsFeature()
+        feat.setGeometry(geom)
+        layer.dataProvider().addFeatures([feat])
+        layer.updateExtents()
+        layer.triggerRepaint()
