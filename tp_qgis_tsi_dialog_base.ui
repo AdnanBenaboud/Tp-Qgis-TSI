@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>888</width>
-    <height>282</height>
+    <width>1080</width>
+    <height>360</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -395,6 +395,13 @@
        </property>
       </spacer>
      </item>
+     <item>
+      <widget class="QDialogButtonBox" name="buttonBox">
+       <property name="standardButtons">
+        <set>QDialogButtonBox::Cancel</set>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
   </layout>
@@ -407,5 +414,22 @@
   </customwidget>
  </customwidgets>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>Qdialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>747</x>
+     <y>336</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>468</x>
+     <y>179</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

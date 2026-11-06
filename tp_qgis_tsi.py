@@ -24,7 +24,7 @@
 from qgis.PyQt.QtCore import QLocale, QTranslator, QCoreApplication
 from qgis.core import QgsSettings, QgsMapLayerProxyModel,QgsGeometry,QgsVectorLayer,QgsFeature,  QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject, QgsDistanceArea, QgsFillSymbol, QgsPointXY
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction
+from qgis.PyQt.QtWidgets import QAction, QDialogButtonBox
 from qgis.gui import QgsMapToolEmitPoint
 import requests
 
@@ -69,6 +69,10 @@ class TpQgisTsi:
         # Declare instance attributes
         self.actions = []
         self.menu = self.tr(u'&TP QGIS TSI')
+
+        self.previous_tool = None
+        self.buffer_layer = None
+        self.buffer_layer_id = None
 
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
@@ -211,16 +215,35 @@ class TpQgisTsi:
             self.dlg.pushButton_objts.clicked.connect(
                 lambda _checked=False: self.start_picking(self.pointTool_objs))
 
+        # RG2 : croix et Échap émettent rejected -> outil restauré, couche conservée
+        self.dlg.rejected.connect(self.restore_previous_tool)
+        # RG3 : "Annuler" supprime en plus la couche tampon
+        self.dlg.buttonBox.button(QDialogButtonBox.Cancel).clicked.connect(
+            self.remove_buffer_layer)
 
-        # show the dialog
+
         self.dlg.show()
-        # Run the dialog event loop
-        result = self.dlg.exec_()
-        # See if OK was pressed
-        if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            pass
+        self.dlg.raise_()
+        self.dlg.activateWindow()
+
+    def restore_previous_tool(self):
+        if self.previous_tool is not None:
+            try:
+                self.canvas.setMapTool(self.previous_tool)
+                return
+            except RuntimeError:
+                # l'outil précédent a été détruit entre-temps
+                pass
+        # pas d'outil précédent : on désactive simplement les nôtres
+        for tool in (self.pointTool, self.pointTool_objs):
+            if self.canvas.mapTool() is tool:
+                self.canvas.unsetMapTool(tool)
+
+    def remove_buffer_layer(self):
+        if self.buffer_layer_id and QgsProject.instance().mapLayer(self.buffer_layer_id):
+            QgsProject.instance().removeMapLayer(self.buffer_layer_id)
+        self.buffer_layer = None
+        self.buffer_layer_id = None
 
     def start_picking(self, tool):
         self.dlg.hide()
@@ -275,16 +298,22 @@ class TpQgisTsi:
             self.iface.messageBar().pushWarning("BAN", "Service BAN injoignable")
             return
 
-        salacted_data = data["features"][0]["properties"]
-        type_voie, nom_voie = self.split_street(salacted_data.get("street", ""))
+        
+
+        features = data.get("features", [])
+        if not features:
+            self.iface.messageBar().pushInfo("BAN", "Aucune adresse trouvée à proximité")
+            return
+        selected_data = features[0]["properties"]
+        type_voie, nom_voie = self.split_street(selected_data.get("street", ""))
 
         labels = {
-            self.dlg.label_numero_voie: salacted_data.get("housenumber", ""),
+            self.dlg.label_numero_voie: selected_data.get("housenumber", ""),
             self.dlg.label_type_voie: type_voie,
             self.dlg.label_nom_voie: nom_voie,
-            self.dlg.label_insee: salacted_data.get("citycode", ""),
-            self.dlg.label_commune: salacted_data.get("city", ""),
-            self.dlg.label_adresse: salacted_data.get("label", ""),
+            self.dlg.label_insee: selected_data.get("citycode", ""),
+            self.dlg.label_commune: selected_data.get("city", ""),
+            self.dlg.label_adresse: selected_data.get("label", ""),
         }
         for label, text in labels.items():
             label.setText(text)
