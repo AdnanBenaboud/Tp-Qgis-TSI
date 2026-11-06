@@ -29,38 +29,6 @@ Projet réalisé dans le cadre du TP QGIS du Master 2 TSI GéoData Paris.
 - Après un clic sur la carte, l'extension affiche le nombre d'objets de cette couche situés à moins de X mètres du point cliqué.
 - Les distances sont calculées en **vrais mètres sur l'ellipsoïde WGS84** (`QgsDistanceArea`), même si la couche est en degrés.
 
-### 3. Zone tampon
-
-- La zone tampon de X mètres est dessinée dans une **couche temporaire** (couche mémoire) nommée « Zone tampon ».
-- Seule la **dernière** zone tampon est conservée : la couche est vidée à chaque nouveau clic.
-- Style : contour noir (`#000000`) fin, sans remplissage.
-- Le cercle est construit dans une projection azimutale équidistante centrée sur le point cliqué, ce qui garantit un rayon exact en mètres partout dans le monde.
-
-### 4. Fermeture de l'extension
-
-L'interface ne contient qu'un seul bouton : **Annuler**.
-
-| Action de l'utilisateur | Couche « Zone tampon » | Outil de carte |
-|---|---|---|
-| Clic sur la croix ou touche Échap | conservée dans le projet | outil précédent réactivé |
-| Clic sur « Annuler » | supprimée du projet | outil précédent réactivé |
-
----
-
-## Installation
-
-1. Copier le dossier de l'extension dans le répertoire des extensions de QGIS :
-   - **Linux** : `~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/`
-   - **Windows** : `%APPDATA%\QGIS\QGIS3\profiles\default\python\plugins\`
-   - **macOS** : `~/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/`
-2. Redémarrer QGIS.
-3. Activer l'extension dans **Extensions > Gérer et installer les extensions > Installées**.
-
-## Prérequis
-
-- QGIS 3.x
-- Python 3 avec la bibliothèque `requests` (incluse avec QGIS dans la plupart des installations)
-- Une connexion Internet pour la recherche d'adresse (API BAN)
 
 ## Utilisation
 
@@ -88,28 +56,3 @@ L'interface ne contient qu'un seul bouton : **Annuler**.
 | `draw_buffer(point)` | Calcule et dessine le cercle de X mètres |
 | `restore_previous_tool()` | Réactive l'outil actif avant le lancement de l'extension |
 | `remove_buffer_layer()` | Supprime la couche tampon du projet |
-
-## Service externe
-
-L'extension utilise l'API de géocodage inverse de la Géoplateforme :
-
-```
-https://data.geopf.fr/geocodage/reverse
-```
-
-Paramètres : `lon`, `lat`, `index=address`, `type=housenumber`, `limit=1`.
-
-## Limites connues
-
-- Le comptage utilise le centroïde de chaque entité, ce qui est exact pour des points.
-- Le comptage parcourt toute la couche : adapté à quelques milliers d'entités.
-- Hors de France, ou en cas de service BAN indisponible, aucune adresse n'est renseignée.
-- À Paris, Lyon et Marseille, le code INSEE renvoyé est celui de l'**arrondissement** (par exemple `75116` pour le 16e).
-
-## Auteur
-
-Adnan Benaboud, Master 2 TSI GéoData Paris.
-
-## Licence
-
-À définir.
